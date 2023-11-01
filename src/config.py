@@ -1,10 +1,14 @@
-from dotenv import load_dotenv
-import os
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
 
-SMTP_HOST = os.environ.get("SMTP_HOST")
-SMTP_PORT = os.environ.get("SMTP_PORT")
-SMTP_LOGIN = os.environ.get("SMTP_LOGIN")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-DB_URI = os.environ.get("DB_URI")
+class Settings(BaseSettings):
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_LOGIN: str
+    SMTP_PASSWORD: str
+    DB_URI: str
+    model_config = SettingsConfigDict(env_file="src/.env")
+
+
+settings = Settings(_env_file="src/.env")

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, status
+from typing import Annotated
+from fastapi import APIRouter, Depends, status
 
 from src import schemas
 from src.codebase.notificaion import Notification, User
@@ -16,7 +17,9 @@ async def create_notification(request: schemas.NotificationBase):
 
 
 @router.get("/list", response_model=schemas.NotificationsResponse)
-async def get_user_notifications(request: schemas.NotificationsRequest):
+async def get_user_notifications(
+    request: Annotated[schemas.NotificationsRequest, Depends()]
+):
     result = await User.get_notifications(request)
     return result
 

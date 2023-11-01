@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from typing import Annotated, Any, List
-from fastapi import Body, Path, Query
+from typing import Annotated, List
+from pydantic import Field
 from enum import Enum
 from datetime import datetime
 
@@ -17,20 +17,20 @@ class NotificationKey(str, Enum):
 
 
 class NotificationBase(BaseModel):
-    user_mail: Annotated[str, Body(max_length=24)]
-    target_mail: Annotated[str, Body(max_length=24)]
     key: NotificationKey
     data: dict | None = None
+    target_mail: Annotated[str, Field(max_length=50, pattern="^(.+)@(\S+)$")]
 
 
-class Notification(ResponseBase, NotificationBase):
-    id: str
+class Notification(NotificationBase):
+    user_mail: Annotated[str, Field(max_length=50)]
+    id: Annotated[str, Field(max_length=50)]
     timestamp: datetime
     is_new: bool
 
 
 class NotificationsRequest(BaseModel):
-    user_mail: Annotated[str, Path(max_length=24)]
+    user_mail: Annotated[str, Field(max_length=50, pattern="^(.+)@(\S+)$")]
     skip: int
     limit: int
 
@@ -47,5 +47,5 @@ class NotificationsResponse(ResponseBase):
 
 
 class MarkReadRequest(BaseModel):
-    user_id: Annotated[str, Body(max_length=24)]
-    notification_id: Annotated[str, Body(max_length=1000)]
+    user_id: Annotated[str, Field(max_length=24)]
+    notification_id: Annotated[str, Field(max_length=50)]

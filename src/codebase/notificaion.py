@@ -1,6 +1,8 @@
 import asyncio
+from typing import Annotated
 from bson.objectid import ObjectId  # from bson import ObjectId
 from fastapi import (
+    Depends,
     status,
     HTTPException,
 )
@@ -10,7 +12,7 @@ from email.message import EmailMessage
 
 from src import schemas
 from src.database import user_collection
-from src.config import SMTP_HOST, SMTP_PORT, SMTP_LOGIN, SMTP_PASSWORD
+from src.config import settings
 
 
 class Notification:
@@ -30,15 +32,15 @@ class Notification:
 
     async def send(request: schemas.NotificationBase):
         message = EmailMessage()
-        message["From"] = request.user_mail
+        message["From"] = settings.SMTP_LOGIN
         message["To"] = request.target_mail
         message["Subject"] = request.key.value
         message.set_content(request.key.value)
         try:
             async with aiosmtplib.SMTP(
-                hostname=SMTP_HOST, port=SMTP_PORT, use_tls=True
+                hostname=settings.SMTP_HOST, port=settings.SMTP_PORT, use_tls=True
             ) as mail_server:
-                await mail_server.login(SMTP_LOGIN, SMTP_PASSWORD)
+                await mail_server.login(settings.SMTP_LOGIN, settings.SMTP_PASSWORD)
                 await mail_server.send_message(message)
         except ValueError:
             raise HTTPException(
@@ -62,20 +64,20 @@ class Notification:
             )
         async with asyncio.TaskGroup() as tg:
             tg.create_task(User.check_create_new(request.target_mail))
-            tg.create_task(User.check_create_new(request.user_mail))
+            tg.create_task(User.check_create_new(settings.SMTP_LOGIN))
 
     async def write_db_log(request: schemas.NotificationBase):
-        user = await User.find({"email": request.user_mail})
+        user = await User.find({"email": settings.SMTP_LOGIN})
         await User.check_notification_limit(user)
         await user_collection.update_one(
-            {"email": request.user_mail},
+            {"email": settings.SMTP_LOGIN},
             {
                 "$addToSet": {
                     "notifications": {
                         "_id": ObjectId(),
                         "timestamp": datetime.utcnow(),
                         "is_new": True,
-                        "user_mail": request.user_mail,
+                        "user_mail": settings.SMTP_LOGIN,
                         "key": request.key.value,
                         "target_mail": request.target_mail,
                         "data": request.data,
